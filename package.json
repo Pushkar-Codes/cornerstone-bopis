@@ -7,8 +7,10 @@
   "license": "MIT",
   "dependencies": {
     "@bigcommerce/stencil-utils": "6.15.1",
+    "body-parser": "^1.20.2",
     "core-js": "^3.9.0",
     "creditcards": "^4.2.0",
+    "dotenv": "^16.4.5",
     "easyzoom": "^2.5.3",
     "focus-trap": "^6.3.0",
     "focus-within-polyfill": "^5.1.0",
@@ -71,5 +73,7 @@
     "test": "npx jest",
     "stylelint": "npx stylelint **/*.scss",
     "stylelint:fix": "npx stylelint --fix **/*.scss"
-  }
+  },
+  "main": "Gruntfile.js",
+  "keywords": []
 }
