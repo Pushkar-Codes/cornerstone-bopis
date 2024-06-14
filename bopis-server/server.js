@@ -24,7 +24,18 @@ app.get("/location", async (req, res) => {
         },
       }
     );
-    res.json(response.data);
+
+    // Filter based on pin-code if providedsss
+    const pinCode = req.query.pinCode;
+    let locations = response.data.data;
+
+    if (pinCode) {
+      locations = locations.filter(
+        (location) => location.address.zip === pinCode
+      );
+    }
+
+    res.json({ data: locations });
   } catch (error) {
     console.error("Error fetching location:", error);
     res.status(500).send("Error fetching location");
