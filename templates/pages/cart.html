@@ -75,11 +75,11 @@ cart: true
     </div>
     <!-- Fetch and display store location -->
 
-    <div class="h">
+    <div class="bopis">
       <p>Find a Store</p>
       <input type="number" id="pin-code" placeholder="Enter pin-code" />
       <button id="search-button">Search</button>
-      <p id="store-location"></p>
+      <div id="store-info"></div>
     </div>
 
     <script>
@@ -93,18 +93,35 @@ cart: true
               .then((response) => response.json())
               .then((data) => {
                 console.log("Location data:", data); // Ensure data is correctly received
+                const storeInfoDiv = document.getElementById("store-info");
+                storeInfoDiv.innerHTML = ""; // Clear previous results
+
                 if (data && data.data && data.data.length > 0) {
                   const storeLocation = data.data[0]; // Assuming you want the first location
-                  const city = storeLocation.address.city;
-                  document.getElementById("store-location").innerText = city;
+                  const address = storeLocation.address;
+// checking for isOpen?
+                  const availabilityMessage =
+                    storeLocation.available_for_pickup ===
+                    "Available for pickup"
+                      ? "Available for pickup"
+                      : "Not available for pickup";
+
+                  const storeInfoHtml = `
+                    <p><strong>${storeLocation.label}</strong></p>
+                    <p>${address.address1},</p>
+                    <p>${address.city}, ${address.state}</p>
+                   <p class="pickup">${availabilityMessage}</p>
+                    <p>Inventor Info</p>
+                  `;
+
+                  storeInfoDiv.innerHTML = storeInfoHtml;
                 } else {
-                  document.getElementById("store-location").innerText =
-                    "No store locations found.";
+                  storeInfoDiv.innerText = "No store locations found.";
                 }
               })
               .catch((error) => {
                 console.error("Error fetching store location:", error);
-                document.getElementById("store-location").innerText =
+                document.getElementById("store-info").innerText =
                   "Error fetching store location.";
               });
           });
