@@ -69,59 +69,90 @@ cart: true
     <h3 tabindex="0">{{lang 'cart.checkout.empty_cart'}}</h3>
     {{/if}}
 
-    <!-- Display store location -->
-    <div id="store-location">
-      <span id="store-location-city"></span>
-    </div>
-    <!-- Fetch and display store location -->
-
+    <!-- Pin Code Input and Store Info Section -->
     <div class="bopis">
       <p>Find a Store</p>
       <input type="number" id="pin-code" placeholder="Enter pin-code" />
       <button id="search-button">Search</button>
+      <div id="city-selection"></div>
       <div id="store-info"></div>
     </div>
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
         document
           .getElementById("search-button")
           .addEventListener("click", function () {
             const pinCode = document.getElementById("pin-code").value;
+            console.log("Pin Code entered:", pinCode);
 
             fetch(`http://localhost:3000/location?pinCode=${pinCode}`)
               .then((response) => response.json())
               .then((data) => {
-                console.log("Location data:", data); // Ensure data is correctly received
-                const storeInfoDiv = document.getElementById("store-info");
-                storeInfoDiv.innerHTML = ""; // Clear previous results
+                console.log("Location data received:", data);
+                const citySelectionDiv =
+                  document.getElementById("city-selection");
+                citySelectionDiv.innerHTML = ""; // Clear previous results
 
                 if (data && data.data && data.data.length > 0) {
-                  const storeLocation = data.data[0]; // Assuming you want the first location
-                  const address = storeLocation.address;
-// checking for isOpen?
-                  const availabilityMessage =
-                    storeLocation.available_for_pickup ===
-                    "Available for pickup"
-                      ? "Available for pickup"
-                      : "Not available for pickup";
+                  const cities = data.data;
+                  let citySelectionHtml = "<p>Select a City:</p>";
 
-                  const storeInfoHtml = `
-                    <p><strong>${storeLocation.label}</strong></p>
-                    <p>${address.address1},</p>
-                    <p>${address.city}, ${address.state}</p>
-                   <p class="pickup">${availabilityMessage}</p>
-                    <p>Inventor Info</p>
-                  `;
+                  cities.forEach((city, index) => {
+                    citySelectionHtml += `
+                      <div>
+                        <input type="radio" id="city-${index}" name="city" value='${JSON.stringify(
+                      city
+                    )}'>
+                        <label for="city-${index}">${city.address.city}</label>
+                      </div>
+                    `;
+                  });
 
-                  storeInfoDiv.innerHTML = storeInfoHtml;
+                  citySelectionDiv.innerHTML = citySelectionHtml;
+
+                  const cityRadios = document.getElementsByName("city");
+                  cityRadios.forEach((radio) => {
+                    radio.addEventListener("change", function () {
+                      const selectedCity = JSON.parse(this.value);
+                      console.log("Selected city:", selectedCity);
+                      const storeInfoDiv =
+                        document.getElementById("store-info");
+                      storeInfoDiv.innerHTML = `
+                        <h2>Selected Store Details</h2>
+                        <p><strong>${selectedCity.label}</strong></p>
+                        <p>${selectedCity.address.address1},</p>
+                        <p>${selectedCity.address.city}, ${
+                        selectedCity.address.state
+                      }</p>
+                        <p>Inventory Level: ${selectedCity.inventory_level}</p>
+                        <p>Email: ${selectedCity.address.email}</p>
+                        <button id="pickup-button" class="pickup-button" data-store='${JSON.stringify(
+                          selectedCity
+                        )}'>Pick up</button>
+                      `;
+
+                      document
+                        .getElementById("pickup-button")
+                        .addEventListener("click", function () {
+                          console.log("Pickup button clicked");
+                          localStorage.setItem(
+                            "selectedStore",
+                            JSON.stringify(selectedCity)
+                          );
+                          window.location.href =
+                            "{{urls.checkout.single_address}}";
+                        });
+                    });
+                  });
                 } else {
-                  storeInfoDiv.innerText = "No store locations found.";
+                  citySelectionDiv.innerText = "No store locations found.";
                 }
               })
               .catch((error) => {
                 console.error("Error fetching store location:", error);
-                document.getElementById("store-info").innerText =
+                document.getElementById("city-selection").innerText =
                   "Error fetching store location.";
               });
           });

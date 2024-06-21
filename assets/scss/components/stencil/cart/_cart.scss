@@ -705,3 +705,13 @@ $card-preview-zoom-bottom-offset: 6rem;
 .pickup {
   color: red;
 }
+
+.pickup-button {
+  margin-top: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pickup-button:hover {
+  text-decoration: underline;
+}
