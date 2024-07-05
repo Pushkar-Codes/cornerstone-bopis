@@ -225,6 +225,108 @@
         </div>
     </section>
 
+     <!-- Pin Code Input and Store Info Section -->
+    <!-- HTML code for the product page -->
+<div class="bopis">
+    <p>Find a Store</p>
+    <input type="number" id="pin-code" placeholder="Enter pin-code" />
+    <button id="search-button">Search</button>
+    <div id="city-selection"></div>
+    <div id="store-info"></div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        document
+            .getElementById("search-button")
+            .addEventListener("click", function () {
+                const pinCode = document.getElementById("pin-code").value;
+                console.log("Pin Code entered:", pinCode);
+
+                fetch(`http://localhost:3000/location?pinCode=${pinCode}`)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        console.log("Location data received:", data);
+                        const citySelectionDiv =
+                            document.getElementById("city-selection");
+                        citySelectionDiv.innerHTML = ""; // Clear previous results
+
+                        if (data && data.data && data.data.length > 0) {
+                            const cities = data.data;
+                            let citySelectionHtml = "<p>Select a City:</p>";
+
+                            cities.forEach((city, index) => {
+                                citySelectionHtml += `
+                                    <div>
+                                        <input type="radio" id="city-${index}" name="city" value='${JSON.stringify(city)}'>
+                                        <label for="city-${index}">${city.address.city}</label>
+                                    </div>
+                                `;
+                            });
+
+                            citySelectionDiv.innerHTML = citySelectionHtml;
+
+                            const cityRadios = document.getElementsByName("city");
+                            cityRadios.forEach((radio) => {
+                                radio.addEventListener("change", function () {
+                                    const selectedCity = JSON.parse(this.value);
+                                    console.log("Selected city:", selectedCity);
+                                    
+                                    // Store selected city in local storage
+                                    localStorage.setItem("selectedStore", JSON.stringify(selectedCity));
+
+                                    const storeInfoDiv =
+                                        document.getElementById("store-info");
+                                    storeInfoDiv.innerHTML = `
+                                        <h4>Pickup available at:</h4>
+                                        <p><strong>${selectedCity.label}</strong></p>
+                                        <p>${selectedCity.address.address1},</p>
+                                        <p>${selectedCity.address.city}, ${selectedCity.address.state}</p>
+                                        <button id="pickup-button">Pickup Here</button>
+                                    `;
+
+                                    document
+                                        .getElementById("pickup-button")
+                                        .addEventListener("click", function () {
+                                            console.log("Pickup button clicked");
+                                            window.location.href = "{{urls.checkout.single_address}}";
+                                        });
+                                });
+                            });
+                        } else {
+                            citySelectionDiv.innerText = "No store locations found.";
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error fetching store location:", error);
+                        document.getElementById("city-selection").innerText =
+                            "Error fetching store location.";
+                    });
+            });
+
+        // Check if a store is already selected and display it
+        const selectedStore = localStorage.getItem("selectedStore");
+        if (selectedStore) {
+            const parsedSelectedStore = JSON.parse(selectedStore);
+            const storeInfoDiv = document.getElementById("store-info");
+            storeInfoDiv.innerHTML = `
+                <h4>Pickup available at:</h4>
+                <p><strong>${parsedSelectedStore.label}</strong></p>
+                <p>${parsedSelectedStore.address.address1},</p>
+                <p>${parsedSelectedStore.address.city}, ${parsedSelectedStore.address.state}</p>
+                <button id="pickup-button">Pickup Here</button>
+            `;
+
+            document
+                .getElementById("pickup-button")
+                .addEventListener("click", function () {
+                    console.log("Pickup button clicked");
+                    window.location.href = "{{urls.checkout.single_address}}";
+                });
+        }
+    });
+</script>
     <section class="productView-details product-options">
         <div class="productView-options">
             {{#if product.release_date }}
