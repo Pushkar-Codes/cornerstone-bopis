@@ -95,4 +95,144 @@ export default class Product extends PageManager {
   }
 }
 
-// Store-selector
+// Store - selector;
+
+$(document).ready(function () {
+  console.log("DOM fully loaded and parsed");
+
+  $("#search-button").on("click", function () {
+    const pinCode = $("#pin-code").val();
+    console.log("Pin Code entered:", pinCode);
+
+    fetch(`http://localhost:3000/location?pinCode=${pinCode}`)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Location data received:", data);
+        const citySelectionDiv = $("#city-selection");
+        citySelectionDiv.empty(); // Clear previous results
+
+        if (data && data.data && data.data.length > 0) {
+          const cities = data.data;
+          let citySelectionHtml = "<p>Select a City:</p>";
+
+          cities.forEach((city, index) => {
+            citySelectionHtml += `
+              <div>
+                <input type="radio" id="city-${index}" name="city" value='${JSON.stringify(
+              city
+            )}'>
+                <label for="city-${index}">${city.address.city}</label>
+              </div>
+            `;
+          });
+
+          citySelectionDiv.html(citySelectionHtml);
+
+          $("input[name='city']").on("change", function () {
+            const selectedCity = JSON.parse($(this).val());
+            console.log("Selected city:", selectedCity);
+
+            // Store selected city in local storage
+            localStorage.setItem("selectedStore", JSON.stringify(selectedCity));
+
+            const storeInfoDiv = $("#store-info");
+            storeInfoDiv.html(`
+              <h4>Pickup available at:</h4>
+              <p><strong>${selectedCity.label}</strong></p>
+              <p>${selectedCity.address.address1},</p>
+              <p>${selectedCity.address.city}, ${selectedCity.address.state}</p>
+              <button id="cart-button">Cart</button>
+            `);
+
+            // $("#cart-button").on("click", function () {
+            //   console.log("Cart button clicked");
+            //   // window.location.href = "{{urls.checkout.single_address}}";
+            //   window.location.href = "http://localhost:3001/cart.php";
+            // });
+
+            $(document).ready(function () {
+              const myCartButton = $("#cart-button");
+
+              myCartButton.on("click", function (event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                const productId = $("input[name='product_id']").val();
+                const quantity = $("#qty").val();
+                // const variantId = 1; // Assuming this is the default variant ID for simplicity
+
+                // Debugging logs
+                console.log("Product ID:", productId);
+                console.log("Quantity:", quantity);
+
+                if (!productId || !quantity) {
+                  console.error("Product ID or Quantity is missing");
+                  alert("Please select a product and quantity.");
+                  return;
+                }
+
+                const payload = {
+                  line_items: [
+                    {
+                      quantity: quantity,
+                      product_id: productId,
+                      // variant_id: variantId,
+                    },
+                  ],
+                };
+
+                // Debugging log
+                console.log("Payload:", payload);
+
+                // Making the API call to the server endpoint using Fetch
+                fetch("http://localhost:3000/create-cart", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload),
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.error) {
+                      console.error("Error creating cart:", data.error);
+                      alert(
+                        "Failed to add item to cart. Please try again later."
+                      );
+                    } else {
+                      console.log("Cart created successfully:", data);
+                      localStorage.setItem("myCartData", JSON.stringify(data));
+
+                      // Check the response structure and log it
+                      if (data.data && data.data.id) {
+                        console.log("Cart ID:", data.data.id);
+
+                        // Redirect to the cart page with appropriate parameters
+                        const redirectUrl = `/cart.php?action=add&product_id=${productId}&cart_id=${data.data.id}`;
+                        window.location.href = redirectUrl;
+                      } else {
+                        console.error("Cart ID not found in response:", data);
+                        alert(
+                          "Cart created but redirect failed. Please check the console for details."
+                        );
+                      }
+                    }
+                  })
+                  .catch((error) => {
+                    console.error("Error creating cart:", error);
+                    alert(
+                      "Failed to add item to cart. Please try again later."
+                    );
+                  });
+              });
+            });
+          });
+        } else {
+          citySelectionDiv.text("No store locations found.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching store location:", error);
+        $("#city-selection").text("Error fetching store location.");
+      });
+  });
+});

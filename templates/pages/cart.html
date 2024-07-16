@@ -70,26 +70,65 @@ cart: true
     {{/if}}
 
     <!-- Selected Store Location Section -->
-    <div id="selected-store-info" class="cart-content-padding-right"></div>
+     <div id="selected-store-info" class="cart-content-padding-right"></div>
   </div>
 </div>
 
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const selectedStore = localStorage.getItem("selectedStore");
-    if (selectedStore) {
-      const parsedSelectedStore = JSON.parse(selectedStore);
-      const storeInfoDiv = document.getElementById("selected-store-info");
-      storeInfoDiv.innerHTML = `
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const selectedStore = localStorage.getItem("selectedStore");
+        if (selectedStore) {
+          const parsedSelectedStore = JSON.parse(selectedStore);
+          const storeInfoDiv = document.getElementById("selected-store-info");
+          storeInfoDiv.innerHTML = `
                 <h4>Pickup from:</h4>
                 <p><strong>${parsedSelectedStore.label}</strong></p>
                 <p>${parsedSelectedStore.address.address1},</p>
                 <p>${parsedSelectedStore.address.city}, ${parsedSelectedStore.address.state}</p>
             `;
-    } else {
-      console.log("No store selected.");
-    }
-  });
-</script>
+        } else {
+          console.log("No store selected.");
+        }
+      });
+    </script>
 
-{{/partial}} {{> layout/base}}
+    <!-- <script>
+  const axios = require("axios");
+
+  const fetchCart = async (cartId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/create-cart/{cartId}`
+      );
+      return response.data; // Assuming response.data contains the cart details
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      throw error;
+    }
+  };
+
+  const cartId = "40b3294f-f1c7-4ef0-a548-0338581ca63a"; // Replace with your actual cart ID
+
+  fetchCart(cartId)
+    .then((cartData) => {
+      console.log("Cart Data:", cartData);
+      // Render cartData in your UI as needed
+      // Example: Display cart amount
+      document.getElementById("cartAmount").innerText =
+        cartData.data.cart_amount;
+      // Example: Loop through and display line items
+      cartData.data.line_items.physical_items.forEach((item) => {
+        console.log("Item Name:", item.name);
+        // Render each item in your UI
+      });
+    })
+    .catch((error) => {
+      console.error("Error fetching cart:", error);
+      // Handle error appropriately
+    });
+</script> -->
+
+    {{/partial}} {{> layout/base}}
+  </div>
+</div>

@@ -1,9 +1,9 @@
 <div id="add-to-cart-wrapper" class="add-to-cart-wrapper" {{#unless product.can_purchase}}style="display: none"{{/unless}}>
     {{#if product.show_quantity_input}}
         {{inject 'productQuantityErrorMessage'  (lang 'products.quantity_error_message')}}
-        <div class="form-field form-field--increments">
-            <label class="form-label form-label--alternate"
-                   for="qty[]">{{lang 'products.quantity'}}</label>
+        <form id="add-to-cart-form">
+            <div class="form-field form-field--increments">
+                <label class="form-label form-label--alternate" for="qty[]">{{lang 'products.quantity'}}</label>
                 <div class="form-increment" data-quantity-change>
                     <button class="button button--icon" data-action="dec">
                         <span class="is-srOnly">{{lang 'products.quantity_decrease' name=product.title}}</span>
@@ -14,8 +14,8 @@
                         </i>
                     </button>
                     <input class="form-input form-input--incrementTotal"
-                           id="qty[]"
-                           name="qty[]"
+                           id="qty"
+                           name="qty"
                            type="tel"
                            value="{{#if product.min_purchase_quantity}}{{product.min_purchase_quantity}}{{else}}1{{/if}}"
                            data-quantity-min="{{product.min_purchase_quantity}}"
@@ -32,7 +32,8 @@
                         </i>
                     </button>
                 </div>
-        </div>
+            </div>
+        </form>
     {{/if}}
 
     <div class="alertBox productAttributes-message" style="display:none">
@@ -41,16 +42,17 @@
         </div>
         <p class="alertBox-column alertBox-message"></p>
     </div>
+
     {{#or customer (unless settings.hide_price_from_guests)}}
         <div class="add-to-cart-buttons {{#if product.pre_order}}pre-order-buttons{{/if}}">
             <div class="form-action">
-                <input
-                        id="form-action-addToCart"
-                        data-wait-message="{{lang 'products.adding_to_cart'}}"
-                        class="button button--primary"
-                        type="submit"
-                        value="{{#if product.pre_order}}{{lang 'products.pre_order'}}{{else}}{{lang 'products.add_to_cart'}}{{/if}}"
-                >
+                <button id="form-action-addToCart" data-wait-message="{{lang 'products.adding_to_cart'}}" class="button button--primary">
+                    {{#if product.pre_order}}
+                        {{lang 'products.pre_order'}}
+                    {{else}}
+                        {{lang 'products.add_to_cart'}}
+                    {{/if}}
+                </button>
                 <span class="product-status-message aria-description--hidden">{{lang 'products.adding_to_cart'}} {{lang 'category.add_cart_announcement'}}</span>
             </div>
             {{#if this.with_wallet_buttons}}
@@ -61,3 +63,55 @@
         </div>
     {{/or}}
 </div>
+
+<!-- <script>
+   document.addEventListener("DOMContentLoaded", function () {
+    const addToCartButton = document.getElementById("cart-button");
+
+    addToCartButton.addEventListener("click", function (event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const productId = document.querySelector("input[name='product_id']").value;
+        const quantity = document.getElementById("qty").value; 
+        const variantId = 1; 
+
+        const payload = {
+            "line_items": [
+                {
+                    "quantity" : quantity,
+                    "product_id": productId,
+                    "variant_id": variantId
+                }
+            ]
+        };
+
+        // Make the API call to the server endpoint
+        fetch('http://localhost:3000/create-cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                console.error("Error creating cart:", data.details);
+            } else {
+                console.log("Cart created successfully:", data);
+                // Redirect to the cart page or update UI as needed
+                window.location.href = `/cart.php?action=add&product_id=${productId}`;
+            }
+        })
+        .catch(error => {
+            console.error("Error creating cart:", error);
+        });
+    });
+});
+</script> 
+ -->

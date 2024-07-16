@@ -26,4 +26,115 @@
   </div>
 </header>
 
-{{{ checkout.checkout_content }}} {{/partial}} {{> layout/empty}}
+{{{ checkout.checkout_content }}}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("DOM fully loaded and parsed");
+
+    // Function to attach the event listener
+    function attachEventListener() {
+      const checkoutContinueButton = document.getElementById(
+        "checkout-shipping-continue"
+      );
+
+      if (checkoutContinueButton) {
+        console.log("Continue button found, attaching event listener");
+        checkoutContinueButton.addEventListener("click", function (event) {
+          // event.preventDefault();
+          console.log("Clicked the continue button");
+
+          // Retrieveing the checkout ID from local storage
+          const checkoutId = JSON.parse(localStorage.getItem("myCartData")).data
+            .id;
+
+          const itemId = JSON.parse(localStorage.getItem("myCartData")).data
+            .line_items.physical_items[0].id;
+
+          const selectedStore = JSON.parse(
+            localStorage.getItem("selectedStore")
+          );
+
+          const pickupLocation = selectedStore.id;
+          console.log("Selected store id:", pickupLocation);
+
+          console.log(checkoutId);
+          console.log(itemId);
+          console.log(localStorage.getItem("myCartData"));
+
+          if (!checkoutId || !itemId) {
+            console.error(
+              "Checkout ID or Item ID not found in local storage. Aborting order placement."
+            );
+            return;
+          }
+
+          const firstNameInput = document.getElementById("firstNameInput");
+          const lastNameInput = document.getElementById("lastNameInput");
+          const emailInput = "djlsjfddfd@gmail.com";
+          const addressLine1Input =
+            document.getElementById("addressLine1Input");
+          const addressLine2Input =
+            document.getElementById("addressLine2Input");
+          const cityInput = document.getElementById("cityInput");
+          const provinceCodeInput =
+            document.getElementById("provinceCodeInput");
+          const countryCodeInput = document.getElementById("countryCodeInput");
+          const postCodeInput = document.getElementById("postCodeInput");
+          const phone = "7781825999";
+
+          const address = {
+            first_name: firstNameInput.value,
+            last_name: lastNameInput.value,
+            email: emailInput,
+            address1: addressLine1Input.value,
+            address2: addressLine2Input.value,
+            city: cityInput.value,
+            state_or_province: provinceCodeInput.value,
+            country_code: countryCodeInput.value,
+            postal_code: postCodeInput.value,
+            phone: phone,
+          };
+
+          console.log("Address object:", address);
+          // payload with updated pickup method based on selected store location
+          const payload = {
+            checkoutId,
+            itemId,
+            address,
+            pickup_option: {
+              pickup_method_id: pickupLocation,
+            },
+          };
+
+          console.log("Sending payload:", payload);
+
+          fetch("http://localhost:3000/create-consignments", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then((response) => {
+              console.log("Response status:", response.status);
+              return response.json();
+            })
+            .then((consignmentData) => {
+              console.log("Consignment created successfully:");
+              // Handle the consignment data here
+            })
+            .catch((error) => {
+              console.error("Error creating consignment:", error);
+            });
+        });
+      } else {
+        console.error("Continue button not found, retrying...");
+        setTimeout(attachEventListener, 500); // Retry after 500ms
+      }
+    }
+
+    // Initial attempt to attach the event listener
+    attachEventListener();
+  });
+</script>
+{{/partial}} {{> layout/empty}}
