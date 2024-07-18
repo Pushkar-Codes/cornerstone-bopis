@@ -27,15 +27,15 @@
 </header>
 
 {{{ checkout.checkout_content }}}
+<button class="submitBtn" id="submit-Btn">SUBMIT</button>
+<button class="orderBtn" id="order-Btn">ORDER</button>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     console.log("DOM fully loaded and parsed");
 
     // Function to attach the event listener
     function attachEventListener() {
-      const checkoutContinueButton = document.getElementById(
-        "checkout-shipping-continue"
-      );
+      const checkoutContinueButton = document.getElementById("submit-Btn");
 
       if (checkoutContinueButton) {
         console.log("Continue button found, attaching event listener");
@@ -43,27 +43,30 @@
           // event.preventDefault();
           console.log("Clicked the continue button");
 
-          // Retrieveing the checkout ID from local storage
-          const checkoutId = JSON.parse(localStorage.getItem("myCartData")).data
-            .id;
-
-          const itemId = JSON.parse(localStorage.getItem("myCartData")).data
-            .line_items.physical_items[0].id;
+          // Retrieve the checkout ID from local storage
+          const myCartData = JSON.parse(localStorage.getItem("myCartData"));
+          const checkoutId = myCartData.data.id;
+          console.log("checkout Id: ", checkoutId);
 
           const selectedStore = JSON.parse(
             localStorage.getItem("selectedStore")
           );
-
           const pickupLocation = selectedStore.id;
           console.log("Selected store id:", pickupLocation);
 
-          console.log(checkoutId);
-          console.log(itemId);
-          console.log(localStorage.getItem("myCartData"));
+          // Map the custom_items instead of physical_items
+          const lineItems = myCartData.data.line_items.custom_items.map(
+            (item) => ({
+              item_id: item.id,
+              quantity: item.quantity,
+            })
+          );
 
-          if (!checkoutId || !itemId) {
+          console.log("Line items:", lineItems);
+
+          if (!checkoutId || lineItems.length === 0) {
             console.error(
-              "Checkout ID or Item ID not found in local storage. Aborting order placement."
+              "Checkout ID or line items not found in local storage. Aborting order placement."
             );
             return;
           }
@@ -71,6 +74,7 @@
           const firstNameInput = document.getElementById("firstNameInput");
           const lastNameInput = document.getElementById("lastNameInput");
           const emailInput = "djlsjfddfd@gmail.com";
+          const companyInput = "Ignitv Technologies";
           const addressLine1Input =
             document.getElementById("addressLine1Input");
           const addressLine2Input =
@@ -82,25 +86,34 @@
           const postCodeInput = document.getElementById("postCodeInput");
           const phone = "7781825999";
 
+          // Get the selected option text and value
+          const selectedOption =
+            provinceCodeInput.options[provinceCodeInput.selectedIndex];
+          const stateOrProvince = selectedOption.text; // e.g., "Georgia"
+
           const address = {
             first_name: firstNameInput.value,
             last_name: lastNameInput.value,
             email: emailInput,
+            company: companyInput,
             address1: addressLine1Input.value,
             address2: addressLine2Input.value,
             city: cityInput.value,
-            state_or_province: provinceCodeInput.value,
+            state_or_province: stateOrProvince,
+            state_or_province_code: provinceCodeInput.value,
             country_code: countryCodeInput.value,
             postal_code: postCodeInput.value,
             phone: phone,
+            custom_fields: [],
           };
 
           console.log("Address object:", address);
-          // payload with updated pickup method based on selected store location
+
+          // Payload with updated pickup method based on selected store location
+          // Payload with updated pickup method based on selected store location
           const payload = {
-            checkoutId,
-            itemId,
-            address,
+            address: address,
+            line_items: lineItems,
             pickup_option: {
               pickup_method_id: pickupLocation,
             },
@@ -108,23 +121,52 @@
 
           console.log("Sending payload:", payload);
 
-          fetch("http://localhost:3000/create-consignments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          })
+          fetch(
+            `http://localhost:3000/checkouts/${checkoutId}/create-consignments`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            }
+          )
             .then((response) => {
               console.log("Response status:", response.status);
               return response.json();
             })
             .then((consignmentData) => {
-              console.log("Consignment created successfully:");
+              console.log("Consignment created successfully:", consignmentData);
               // Handle the consignment data here
+
+              // Now create the billing address using the same address object
+              const billingPayload = {
+                address: address,
+              };
+
+              return fetch(
+                `http://localhost:3000/checkouts/${checkoutId}/create-billing-address`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(billingPayload),
+                }
+              );
+            })
+            .then((billingResponse) => {
+              console.log(
+                "Billing address created successfully:",
+                billingResponse
+              );
+              // Handle the billing address response here if needed
             })
             .catch((error) => {
-              console.error("Error creating consignment:", error);
+              console.error(
+                "Error creating consignment or billing address:",
+                error
+              );
             });
         });
       } else {
@@ -135,6 +177,51 @@
 
     // Initial attempt to attach the event listener
     attachEventListener();
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const orderButton = document.getElementById("order-Btn");
+
+    if (orderButton) {
+      orderButton.addEventListener("click", function (event) {
+        console.log("Clicked the order button");
+
+        // Retrieve the checkout ID from local storage
+        const myCartData = JSON.parse(localStorage.getItem("myCartData"));
+        const checkoutId = myCartData.data.id;
+        console.log("checkout Id: ", checkoutId);
+
+        // Make a POST request to create order
+        fetch(`http://localhost:3000/create-order/${checkoutId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Order created successfully");
+              // Redirect to order confirmation page
+              window.location.href =
+                "http://localhost:3001/checkout/order-confirmation";
+            } else {
+              console.error("Failed to create order:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error creating order:", error);
+          });
+      });
+    } else {
+      console.error("Order button not found, retrying...");
+      setTimeout(function () {
+        document.addEventListener("DOMContentLoaded", function () {
+          attachOrderListener();
+        });
+      }, 500);
+    }
   });
 </script>
 {{/partial}} {{> layout/empty}}

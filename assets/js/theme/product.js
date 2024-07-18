@@ -144,86 +144,100 @@ $(document).ready(function () {
               <button id="cart-button">Cart</button>
             `);
 
-            // $("#cart-button").on("click", function () {
-            //   console.log("Cart button clicked");
-            //   // window.location.href = "{{urls.checkout.single_address}}";
-            //   window.location.href = "http://localhost:3001/cart.php";
-            // });
+            // Handle cart button click
+            const myCartButton = $("#cart-button");
 
-            $(document).ready(function () {
-              const myCartButton = $("#cart-button");
+            myCartButton.on("click", function (event) {
+              event.preventDefault(); // Prevent the default form submission
 
-              myCartButton.on("click", function (event) {
-                event.preventDefault(); // Prevent the default form submission
+              const productId = $("input[name='product_id']").val();
+              const quantity = $("#qty").val();
+              // const variantId = 1; // Assuming this is the default variant ID for simplicity
 
-                const productId = $("input[name='product_id']").val();
-                const quantity = $("#qty").val();
-                // const variantId = 1; // Assuming this is the default variant ID for simplicity
+              // Debugging logs
+              console.log("Product ID:", productId);
+              console.log("Quantity:", quantity);
 
-                // Debugging logs
-                console.log("Product ID:", productId);
-                console.log("Quantity:", quantity);
+              if (!productId || !quantity) {
+                console.error("Product ID or Quantity is missing");
+                alert("Please select a product and quantity.");
+                return;
+              }
 
-                if (!productId || !quantity) {
-                  console.error("Product ID or Quantity is missing");
-                  alert("Please select a product and quantity.");
-                  return;
-                }
+              const skuElement = document.querySelector(
+                ".productView-info-value[data-product-sku]"
+              );
+              const sku = skuElement.textContent.trim(); // This will give you "IGNM"
 
-                const payload = {
-                  line_items: [
-                    {
-                      quantity: quantity,
-                      product_id: productId,
-                      // variant_id: variantId,
-                    },
-                  ],
-                };
+              const productNameElement =
+                document.querySelector(".productView-title");
+              const productName = productNameElement.textContent.trim(); // This will give you "Ignitiv Magazine"
 
-                // Debugging log
-                console.log("Payload:", payload);
+              const priceElement = document.querySelector(
+                "[data-product-price-without-tax]"
+              );
+              const price = priceElement.textContent.trim(); // This will give you "$10.25"
 
-                // Making the API call to the server endpoint using Fetch
-                fetch("http://localhost:3000/create-cart", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
+              // Prepare payload dynamically
+              const payload = {
+                customer_id: 0,
+                line_items: [],
+                custom_items: [
+                  {
+                    sku: sku,
+                    name: productName,
+                    quantity: quantity,
+                    list_price: price,
                   },
-                  body: JSON.stringify(payload),
-                })
-                  .then((response) => response.json())
-                  .then((data) => {
-                    if (data.error) {
-                      console.error("Error creating cart:", data.error);
-                      alert(
-                        "Failed to add item to cart. Please try again later."
-                      );
-                    } else {
-                      console.log("Cart created successfully:", data);
-                      localStorage.setItem("myCartData", JSON.stringify(data));
+                ],
+                channel_id: 1,
+                currency: {
+                  code: "USD",
+                },
+                locale: "en-US",
+              };
 
-                      // Check the response structure and log it
-                      if (data.data && data.data.id) {
-                        console.log("Cart ID:", data.data.id);
+              // Debugging log
+              console.log("Payload:", payload);
 
-                        // Redirect to the cart page with appropriate parameters
-                        const redirectUrl = `/cart.php?action=add&product_id=${productId}&cart_id=${data.data.id}`;
-                        window.location.href = redirectUrl;
-                      } else {
-                        console.error("Cart ID not found in response:", data);
-                        alert(
-                          "Cart created but redirect failed. Please check the console for details."
-                        );
-                      }
-                    }
-                  })
-                  .catch((error) => {
-                    console.error("Error creating cart:", error);
+              // Making the API call to create a cart
+              fetch("http://localhost:3000/create-cart", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.error) {
+                    console.error("Error creating cart:", data.error);
                     alert(
                       "Failed to add item to cart. Please try again later."
                     );
-                  });
-              });
+                  } else {
+                    console.log("Cart created successfully:", data);
+                    localStorage.setItem("myCartData", JSON.stringify(data));
+
+                    // Check the response structure and log it
+                    if (data.data && data.data.id) {
+                      console.log("Cart ID:", data.data.id);
+
+                      // Redirect to the cart page with appropriate parameters
+                      const redirectUrl = `/cart.php?action=add&product_id=${productId}&cart_id=${data.data.id}`;
+                      window.location.href = redirectUrl;
+                    } else {
+                      console.error("Cart ID not found in response:", data);
+                      alert(
+                        "Cart created but redirect failed. Please check the console for details."
+                      );
+                    }
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error creating cart:", error);
+                  alert("Failed to add item to cart. Please try again later.");
+                });
             });
           });
         } else {

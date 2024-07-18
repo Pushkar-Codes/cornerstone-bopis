@@ -480,3 +480,57 @@ export default class Cart extends PageManager {
     );
   }
 }
+
+// line
+
+$(document).ready(function () {
+  // Adding event listener to the checkout button
+  $(".button--primary").on("click", function (event) {
+    event.preventDefault(); // Prevent default action
+
+    const myCartData = JSON.parse(localStorage.getItem("myCartData"));
+
+    const customItems = myCartData.data.line_items.custom_items.map((item) => ({
+      sku: item.sku,
+      name: item.name,
+      quantity: item.quantity,
+      list_price: item.list_price,
+    }));
+
+    const payload = {
+      custom_items: customItems,
+    };
+
+    console.log("Payload:", payload);
+
+    const cartId = myCartData.data.id;
+    console.log(cartId); // Extract cartId from myCartData
+
+    fetch(`http://localhost:3000/get-cart/${cartId}/items`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          console.error("Error getting cart:", data.error);
+          alert("Failed to retrieve cart details. Please try again later.");
+        } else {
+          console.log("Cart details retrieved successfully:", data);
+
+          // Assuming data contains cart information
+          const cartDetails = data.data;
+
+          // Redirect to the checkout page or handle the cart details as needed
+          window.location.href = `/checkout?cartId=${cartId}`;
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting cart:", error);
+        alert("Failed to retrieve cart details. Please try again later.");
+      });
+  });
+});

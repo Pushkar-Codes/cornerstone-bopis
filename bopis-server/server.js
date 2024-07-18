@@ -70,21 +70,32 @@ app.get("/inventory-level", async (req, res) => {
 
 // Step 1: Creating Cart
 
+//
 app.post("/create-cart", async (req, res) => {
   try {
+    const { line_items, custom_items } = req.body;
     const cartResponse = await axios.post(
       `${baseURL}/carts`,
       {
         customer_id: 0,
-        line_items: req.body.line_items,
+        line_items: line_items || [],
+        custom_items: custom_items || [
+          {
+            sku: sku,
+            name: productName,
+            quantity: quantity,
+            list_price: price,
+          },
+        ],
         channel_id: 1,
-        currency: { code: "USD" },
+        currency: {
+          code: "USD",
+        },
         locale: "en-US",
       },
       { headers }
     );
 
-    // Constructing the response object in the desired format
     const responseData = {
       data: {
         id: cartResponse.data.data.id,
@@ -101,6 +112,7 @@ app.post("/create-cart", async (req, res) => {
         cart_amount: cartResponse.data.data.cart_amount,
         coupons: cartResponse.data.data.coupons,
         discounts: cartResponse.data.data.discounts,
+        custom_items: cartResponse.data.data.custom_items,
         line_items: cartResponse.data.data.line_items,
         created_time: cartResponse.data.data.created_time,
         updated_time: cartResponse.data.data.updated_time,
@@ -110,42 +122,63 @@ app.post("/create-cart", async (req, res) => {
     };
 
     console.log("Cart creation response:", responseData);
-    res.json(responseData); // Sending the formatted response back to the client
+
+    // const cartId = cartResponse.data.data.id;
+    res.json(responseData);
   } catch (error) {
     console.error("Error creating cart:", error);
-    res.status(500).json({ error: "Error creating cart" });
+    res.status(500).json({ error: "Failed to create cart" });
   }
 });
 
-// Step 2: Getting Cart
-app.get("/get-cart/:cartId", async (req, res) => {
+// Step 2: Getting Cart Items
+app.post("/get-cart/:cartId/items", async (req, res) => {
   const { cartId } = req.params;
+  const { custom_items } = req.body; // Expecting custom_items in the request body
+
   try {
-    const cartResponse = await axios.get(`${baseURL}/carts/${cartId}`, {
-      headers,
-    });
+    // Assuming you want to update the cart with custom_items
+    const cartResponse = await axios.post(
+      `${baseURL}/carts/${cartId}/items`,
+      {
+        custom_items: custom_items,
+      },
+      {
+        headers,
+      }
+    );
     res.json(cartResponse.data);
   } catch (error) {
-    console.error("Error getting cart:", error);
-    res.status(500).json({ error: "Error getting cart" });
+    console.error("Error getting cart items:", error);
+    res.status(500).json({ error: "Error getting cart items" });
   }
 });
-
 // Step 3: Creating Consignments
-app.post("/create-consignments", async (req, res) => {
-  const { checkoutId, itemId, address, pickup_option } = req.body;
+app.post("/checkouts/:checkoutId/create-consignments", async (req, res) => {
+  const { checkoutId } = req.params;
+  const { address, line_items, pickup_option } = req.body; // Ensure line_items is properly destructure from req.body
+
   try {
     const consignmentsResponse = await axios.post(
       `${baseURL}/checkouts/${checkoutId}/consignments`,
       [
         {
-          address: address,
-          line_items: [
-            {
-              item_id: itemId,
-              quantity: 1,
-            },
-          ],
+          address: {
+            first_name: address.first_name,
+            last_name: address.last_name,
+            email: address.email,
+            company: address.company,
+            address1: address.address1,
+            address2: address.address2,
+            city: address.city,
+            state_or_province: address.state_or_province,
+            state_or_province_code: address.state_or_province_code,
+            country_code: address.country_code,
+            postal_code: address.postal_code,
+            phone: address.phone,
+            custom_fields: address.custom_fields || [], // Ensure custom_fields is an array
+          },
+          line_items: line_items, // Ensure line_items is passed correctly
           pickup_option: pickup_option,
         },
       ],
@@ -158,26 +191,26 @@ app.post("/create-consignments", async (req, res) => {
     res.status(500).json({ error: "Error creating consignments" });
   }
 });
-
 // Step 4: Create Billing Address
-app.post("/create-billing-address", async (req, res) => {
-  const { checkoutId } = req.body;
+app.post("/checkouts/:checkoutId/create-billing-address", async (req, res) => {
+  const { checkoutId } = req.params;
+  const { address } = req.body;
+
   try {
     const billingAddressResponse = await axios.post(
       `${baseURL}/checkouts/${checkoutId}/billing-address`,
       {
-        first_name: "Pushkar",
-        last_name: "Dutta",
-        email: "Pushkardutt555@gmail.com",
+        first_name: address.first_name,
+        last_name: address.last_name,
+        email: address.email,
         company: "Ignitiv Technologies",
-        address1: "E-201, Main Street",
-        address2: "string",
-        city: "Austin",
-        state_or_province: "Texas",
-        state_or_province_code: "FL",
-        country_code: "US",
-        postal_code: "395006",
-        phone: "7781825993",
+        address1: address.address1,
+        address2: address.address2,
+        city: address.city,
+        state_or_province: address.state_or_province,
+        country_code: address.country_code,
+        postal_code: address.postal_code,
+        phone: address.phone,
         custom_fields: [],
       },
       { headers }
@@ -191,8 +224,9 @@ app.post("/create-billing-address", async (req, res) => {
 });
 
 // Step 5: Creating Order
-app.post("/create-order", async (req, res) => {
-  const { checkoutId } = req.body;
+// Step 5: Creating Order
+app.post("/create-order/:checkoutId", async (req, res) => {
+  const { checkoutId } = req.params;
   try {
     const orderResponse = await axios.post(
       `${baseURL}/checkouts/${checkoutId}/orders`,
@@ -200,7 +234,7 @@ app.post("/create-order", async (req, res) => {
       { headers }
     );
     res.json(orderResponse.data);
-    console.log("Order created");
+    console.log("Order created: ", orderResponse.data);
   } catch (error) {
     console.error("Error creating order:", error);
     res.status(500).json({ error: "Error creating order" });
